@@ -1,6 +1,7 @@
 package com.example.untitled2;
 
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.widget.ImageView;
 
 import java.io.InputStream;
@@ -14,16 +15,36 @@ public class GifPlayer {
     private InputStream inputStream;
     private GifDecoder gifDecoder;     // need GifDecoder.java
     private ImageView imageView;
-    private PlayingTask playingTask;
     private boolean stopAnim = false;
     private boolean isLoop = false;
     private int frameNumber;
     private AfterPlay afterPlay;
     private boolean isDoneOnce = false;
+    private Runnable run;
+    private Handler h;
+    private int invalidate = 33;
 
-    public GifPlayer(InputStream inputStream, ImageView imageView){
+    public GifPlayer(InputStream inputStream, final ImageView imageView){
         this.inputStream = inputStream;
         this.imageView = imageView;
+        h = new Handler();
+        run = new Runnable() {
+            @Override
+            public void run() {
+                anim();
+                if(!stopAnim){
+                    h.postDelayed(run, invalidate);
+                    if(!isDoneOnce){
+                        afterPlay.doAfterPlay();
+                        isDoneOnce = true;
+                    }
+                }else{
+                    imageView.setImageBitmap(gifDecoder.getFrame(gifDecoder.frameCount-1));
+                    IS_PLAYING = false;
+                    afterPlay.doAfterPlay();
+                }
+            }
+        };
         gifDecoder = new GifDecoder();
         gifDecoder.read(this.inputStream);
     }
@@ -52,7 +73,7 @@ public class GifPlayer {
         stopPlaying();
         stopAnim = false;
         frameNumber = 0;
-        new PlayingTask().execute();
+        h.postDelayed(run, invalidate);
     }
 
     public void startPlaying(boolean isLoop, AfterPlay afterPlay){
@@ -61,7 +82,7 @@ public class GifPlayer {
         stopPlaying();
         stopAnim = false;
         frameNumber = 0;
-        new PlayingTask().execute();
+        h.postDelayed(run, invalidate);
     }
 
     public void stopPlaying(){
@@ -78,35 +99,4 @@ public class GifPlayer {
             frameNumber++;
         }
     }
-
-    private class PlayingTask extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void result) {
-            super.onPostExecute(result);
-            anim();
-            if(!stopAnim){
-                if(!isDoneOnce){
-                    afterPlay.doAfterPlay();
-                    isDoneOnce = true;
-                }
-                new PlayingTask().execute();
-            }else{
-                imageView.setImageBitmap(gifDecoder.getFrame(gifDecoder.frameCount-1));
-                IS_PLAYING = false;
-                afterPlay.doAfterPlay();
-            }
-        }
-    }
-
 }
