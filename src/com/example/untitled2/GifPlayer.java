@@ -22,7 +22,7 @@ public class GifPlayer {
     private boolean isDoneOnce = false;
     private Runnable run;
     private Handler h;
-    private int invalidate = 33;
+    private int invalidate = 35;
 
     public GifPlayer(InputStream inputStream, final ImageView imageView){
         this.inputStream = inputStream;
